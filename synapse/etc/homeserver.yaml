@@ -1,0 +1,267 @@
+# vim:ft=yaml
+
+## Federation Certificate ##
+# PEM encoded X509 certificate for TLS.
+# DO NOT replace the self-signed certificate that synapse autogenerates on launch with your own SSL certificate + key pair.
+# If you do, BAD THINGS will happen
+# See https://github.com/matrix-org/synapse/issues/2438
+tls_certificate_path: "%SYNAPSE_CONF_PATH%/homeserver.tls.crt"
+
+# PEM encoded private key for TLS
+tls_private_key_path: "%SYNAPSE_CONF_PATH%/homeserver.tls.key"
+
+# PEM dh parameters for ephemeral keys
+tls_dh_params_path: "%SYNAPSE_CONF_PATH%/homeserver.tls.dh"
+
+
+## Server ##
+
+# Don't bind to the https port
+no_tls: false
+
+# Whether to serve a web client from the HTTP/HTTPS root resource.
+web_client: false
+
+# Set the soft limit on the number of file descriptors synapse can use
+# Zero is used to indicate synapse should set the soft limit to the
+# hard limit.
+soft_file_limit: 0
+
+# List of ports that Synapse should listen on, their purpose and their
+# configuration.
+listeners:
+  # Federation listener
+  # Do not reverse proxy this
+  - port: 8448
+    bind_address: ''
+    type: http
+    tls: true
+
+    # NO REVERSE PROXY ON FEDERATION LISTENER
+    x_forwarded: false
+
+    # List of HTTP resources to serve on this listener.
+    resources:
+      - names: [federation]  # Federation APIs
+        compress: false
+
+  # Client listener,
+  # Reverse proxy this port to 443
+  - port: 8008
+    bind_address: ''
+    type: http
+    tls: false
+
+    # REVERSE PROXY ON CLIENT LISTENER
+    x_forwarded: true
+
+    resources:
+      - names: [client]
+        compress: true
+
+database:
+  name: "psycopg2"
+  args:
+    user: "%POSTGRES_USER%"
+    password: "%POSTGRES_PASSWORD%"
+    database: "%POSTGRES_DB%"
+    host: "%POSTGRES_HOST%"
+    cp_min: 5
+    cp_max: 10
+
+# Number of events to cache in memory.
+event_cache_size: "10K"
+
+# A yaml python logging config file
+#log_config: "%SYNAPSE_CONF_PATH%/log.yaml"
+
+
+## Ratelimiting ##
+
+# Number of messages a client can send per second
+rc_messages_per_second: 0.2
+
+# Number of message a client can send before being throttled
+rc_message_burst_count: 10.0
+
+# The federation window size in milliseconds
+federation_rc_window_size: 1000
+
+# The number of federation requests from a single server in a window
+# before the server will delay processing the request.
+federation_rc_sleep_limit: 10
+
+# The duration in milliseconds to delay processing events from
+# remote servers by if they go over the sleep limit.
+federation_rc_sleep_delay: 500
+
+# The maximum number of concurrent federation requests allowed
+# from a single server
+federation_rc_reject_limit: 50
+
+# The number of federation requests to concurrently process from a
+# single server
+federation_rc_concurrent: 3
+
+
+
+# Directory where uploaded images and attachments are stored.
+media_store_path: "%SYNAPSE_DATA_PATH%/media"
+
+# The largest allowed upload size in bytes
+max_upload_size: "10M"
+
+# Maximum number of pixels that will be thumbnailed
+max_image_pixels: "32M"
+
+# Whether to generate new thumbnails on the fly to precisely match
+# the resolution requested by the client. If true then whenever
+# a new resolution is requested by the client the server will
+# generate a new thumbnail. If false the server will pick a thumbnail
+# from a precalculated list.
+dynamic_thumbnails: false
+
+# List of thumbnail to precalculate when an image is uploaded.
+thumbnail_sizes:
+- width: 32
+  height: 32
+  method: crop
+- width: 96
+  height: 96
+  method: crop
+- width: 320
+  height: 240
+  method: scale
+- width: 640
+  height: 480
+  method: scale
+- width: 800
+  height: 600
+  method: scale
+
+# Is the preview URL API enabled?  If enabled, you *must* specify
+# an explicit url_preview_ip_range_blacklist of IPs that the spider is
+# denied from accessing.
+url_preview_enabled: true
+
+# List of IP address CIDR ranges that the URL preview spider is denied
+# from accessing.  There are no defaults: you must explicitly
+# specify a list for URL previewing to work.  You should specify any
+# internal services in your network that you do not want synapse to try
+# to connect to, otherwise anyone in any Matrix room could cause your
+# synapse to issue arbitrary GET requests to your internal services,
+# causing serious security issues.
+#
+url_preview_ip_range_blacklist:
+  - '127.0.0.0/8'
+  - '10.0.0.0/8'
+  - '172.16.0.0/12'
+  - '192.168.0.0/16'
+
+# The largest allowed URL preview spidering size in bytes
+max_spider_size: "10M"
+
+
+
+## Captcha ##
+enable_registration_captcha: false
+
+
+## Turn ##
+
+# The public URIs of the TURN server to give to clients
+turn_uris: []
+
+# The shared secret used to compute passwords for the TURN server
+turn_shared_secret: "YOUR_SHARED_SECRET"
+
+# How long generated TURN credentials last
+turn_user_lifetime: "1h"
+
+
+## Registration ##
+
+# Enable registration for new users.
+enable_registration: false
+
+# If set, allows registration by anyone who also has the shared
+# secret, even if registration is otherwise disabled.
+# registration_shared_secret: <PRIVATE STRING>
+
+# Sets the expiry for the short term user creation in
+# milliseconds. For instance the bellow duration is two weeks
+# in milliseconds.
+user_creation_max_duration: 1209600000
+
+# Set the number of bcrypt rounds used to generate password hash.
+# Larger numbers increase the work factor needed to generate the hash.
+# The default number of rounds is 12.
+bcrypt_rounds: 12
+
+# Allows users to register as guests without a password/email/etc, and
+# participate in rooms hosted on this server which have been made
+# accessible to anonymous users.
+allow_guest_access: false
+
+# The list of identity servers trusted to verify third party
+# identifiers by this server.
+trusted_third_party_id_servers:
+    - "%MATRIX_DOMAIN%"
+
+
+## Metrics ###
+
+# Enable collection and rendering of performance metrics
+enable_metrics: false
+
+## API Configuration ##
+
+# A list of event types that will be included in the room_invite_state
+room_invite_state_types:
+    - "m.room.join_rules"
+    - "m.room.canonical_alias"
+    - "m.room.avatar"
+    - "m.room.name"
+
+
+# A list of application service config file to use
+app_service_config_files: []
+
+# Used to enable access token expiration.
+expire_access_token: false
+
+## Signing Keys ##
+
+# Path to the signing key to sign messages with
+signing_key_path: "%SYNAPSE_CONF_PATH%/homeserver.signing.key"
+
+# The keys that the server used to sign messages with but won't use
+# to sign new messages. E.g. it has lost its private key
+old_signing_keys: {}
+#  "ed25519:auto":
+#    # Base64 encoded public key
+#    key: "The public part of your old signing key."
+#    # Millisecond POSIX timestamp when the key expired.
+#    expired_ts: 123456789123
+
+# How long key response published by this server is valid for.
+# Used to set the valid_until_ts in /key/v2 APIs.
+# Determines how quickly servers will query to check which keys
+# are still valid.
+key_refresh_interval: "1d" # 1 Day.
+
+# The trusted servers to download signing keys from.
+perspectives:
+  servers:
+    "matrix.org":
+      verify_keys:
+        "ed25519:auto":
+          key: "Noi6WqcDj0QmPxCNQqgezwTlBKrfqehY1u2FyWP9uYw"
+
+# Enable password for login.
+password_config:
+   enabled: true
+
+# We like our privacy and therefore we don't report stats to New Vector
+report_stats: false
+

@@ -1,0 +1,45 @@
+version: '3.2'
+
+services:
+  db:
+    image: 'kamax/matrix-postgres'
+    environment:
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
+      POSTGRES_DB:
+    ports:
+      - "5432"
+    restart: always
+    volumes:
+      - type: volume
+        source: postgres-data
+        target: /var/lib/postgresql/data
+  hs:
+    image: 'kamax/matrix-synapse'
+    environment:
+      MATRIX_DOMAIN:
+      POSTGRES_HOST:
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
+      POSTGRES_DB:
+    ports:
+      - "8448:8448"
+    restart: always
+    volumes:
+      - type: volume
+        source: synapse-conf
+        target: /app/etc
+      - type: volume
+        source: synapse-data
+        target: /app/var
+      - type: volume
+        source: synapse-log
+        target: /app/log
+    depends_on:
+      - db
+
+volumes:
+  postgres-data:
+  synapse-conf:
+  synapse-data:
+  synapse-log:
